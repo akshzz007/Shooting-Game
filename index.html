@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shooting Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #ff9a8b, #ff6a88, #ff99ac); /* Gradient background */
+      color: black;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      border: 4px solid black;  /* Black border */
+      background: #add8e6;  /* Light pastel blue for canvas */
+    }
+
+    footer {
+      margin-top: 10px;
+      font-size: 14px;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
+  <footer>Created by Akshra</footer>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const player = { x: 175, y: 550, width: 50, height: 10, color: "white", speed: 20 };
+    const bullets = [];
+    const enemies = [];
+    const bulletSpeed = 5;
+    const enemySpeed = 2;
+    let score = 0;
+    let missedEnemies = 0;
+    let gameRunning = true;
+
+    // Spawn enemies randomly
+    function spawnEnemy() {
+      if (gameRunning) {
+        const numEnemies = Math.floor(Math.random() * 2) + 1;
+
+        for (let i = 0; i < numEnemies; i++) {
+          const color = Math.random() > 0.5 ? "red" : "yellow";
+          enemies.push({
+            x: Math.random() * (canvas.width - 40),
+            y: 0,
+            width: 40,
+            height: 40,
+            color: color,
+            points: color === "red" ? 10 : 20,
+          });
+        }
+
+        setTimeout(spawnEnemy, 1000);
+      }
+    }
+
+    // Draw player (gun) with black border
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+      ctx.strokeStyle = "black";  // Black border for gun
+      ctx.strokeRect(player.x, player.y, player.width, player.height);
+    }
+
+    // Draw bullets with black border
+    function drawBullets() {
+      bullets.forEach((bullet, index) => {
+        bullet.y -= bulletSpeed;
+        if (bullet.y < 0) bullets.splice(index, 1);
+
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        ctx.strokeStyle = "black";  // Black border for bullets
+        ctx.strokeRect(bullet.x, bullet.y, bullet.width, bullet.height);
+      });
+    }
+
+    // Draw enemies with black border and detect collisions
+    function drawEnemies() {
+      enemies.forEach((enemy, index) => {
+        enemy.y += enemySpeed;
+
+        if (enemy.y > canvas.height) {
+          enemies.splice(index, 1);
+          missedEnemies++;
+          if (missedEnemies > 5) {
+            gameRunning = false;
+          }
+        }
+
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.strokeStyle = "black";  // Black border for enemies
+        ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+        bullets.forEach((bullet, bIndex) => {
+          if (
+            bullet.x < enemy.x + enemy.width &&
+            bullet.x + bullet.width > enemy.x &&
+            bullet.y < enemy.y + enemy.height &&
+            bullet.y + bullet.height > enemy.y
+          ) {
+            enemies.splice(index, 1);
+            bullets.splice(bIndex, 1);
+            score += enemy.points;
+          }
+        });
+      });
+    }
+
+    // Display score and missed enemies
+    function drawScore() {
+      ctx.fillStyle = "black";  // Black text for contrast
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 20);
+      ctx.fillText(`Missed: ${missedEnemies}/5`, 10, 40);
+    }
+
+    // Handle player movement and shooting
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft" && player.x > 0) player.x -= player.speed * 2;
+      if (e.key === "ArrowRight" && player.x < canvas.width - player.width) player.x += player.speed * 2;
+      if (e.key === " ") {
+        bullets.push({
+          x: player.x + player.width / 2 - 2.5,
+          y: player.y,
+          width: 5,
+          height: 10,
+        });
+      }
+    });
+
+    // Main game loop
+    function gameLoop() {
+      if (!gameRunning) {
+        ctx.fillStyle = "red";
+        ctx.font = "24px Arial";
+        ctx.fillText("Game Over", canvas.width / 2 - 60, canvas.height / 2);
+        ctx.fillText(`Final Score: ${score}`, canvas.width / 2 - 60, canvas.height / 2 + 30);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      drawBullets();
+      drawEnemies();
+      drawScore();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Start the game
+    spawnEnemy();
+    gameLoop();
+  </script>
+</body>
+</html>
+
